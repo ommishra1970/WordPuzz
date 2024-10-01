@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Puzzle with Save Progress</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #ffecd2, #fcb69f);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #gameContainer {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 400px;
+            display: none; /* Hidden initially */
+        }
+
+        #alphabetContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+
+        .letter {
+            background-color: #f67280;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px;
+            border-radius: 5px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        #wordInput {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border: 2px dashed #f67280;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        button {
+            padding: 10px;
+            width: 100%;
+            background-color: #f67280;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background-color: #ff8c94;
+        }
+
+        #scoreDisplay {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #startGameButton {
+            padding: 15px;
+            width: 200px;
+            font-size: 18px;
+            background-color: #f67280;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #startGameButton:hover {
+            background-color: #ff8c94;
+        }
+
+        #startContainer {
+            text-align: center;
+        }
+
+        #musicControl {
+            margin-top: 10px;
+        }
+        
+        #exitDialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            display: none; /* Hidden initially */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 10; /* Show above other elements */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="startContainer">
+        <h1>Word Puzzle Game</h1>
+        <button id="startGameButton">Start Game</button>
+    </div>
+
+    <div id="gameContainer">
+        <h1>Word Puzzle</h1>
+
+        <div id="alphabetContainer"></div>
+
+        <input type="text" id="wordInput" placeholder="Drop letters here" readonly>
+
+        <button id="submit">Submit Word</button>
+        <button id="saveProgress">Save Progress</button>
+        <button id="restart">Restart Game</button>
+
+        <div id="scoreDisplay">Score: 0</div>
+        <div id="musicControl">
+            <button id="toggleMusic">Pause Music</button>
+        </div>
+    </div>
+
+    <div id="exitDialog">
+        <h2>Are you sure you want to exit?</h2>
+        <button id="stayButton">Stay</button>
+        <button id="exitButton">Exit</button>
+    </div>
+
+    <audio id="backgroundMusic" src="background.mp3" loop></audio>
+    <audio id="dragSound" src="drag.mp3"></audio>
+    <audio id="correctSound" src="correct.mp3"></audio>
+    <audio id="wrongSound" src="wrong.mp3"></audio>
+
+    <script>
+        let validWordsList = [];
+        let usedWords = new Set();
+        let score = 0;
+        let isMusicPlaying = true; // Track the music state
+
+        async function loadDictionary() {
+            try {
+                const response = await fetch('https://ommishra1970.github.io/WordPuzz/dictionary.txt');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const text = await response.text();
+                validWordsList = text.split('\n').map(word => word.trim().toUpperCase());
+                console.log('Dictionary loaded successfully:', validWordsList);
+            } catch (error) {
+                console.error('Error loading dictionary:', error);
+                alert('Failed to load the dictionary. Please check the dictionary.txt file.');
+            }
+        }
+
+        function loadProgress() {
+            const savedUsedWords = localStorage.getItem('usedWords');
+            const savedScore = localStorage.getItem('score');
+
+            if (savedUsedWords) {
+                usedWords = new Set(JSON.parse(savedUsedWords));
+            }
+
+            if (savedScore) {
+                score = parseInt(savedScore);
+                document.getElementById("scoreDisplay").innerText = "Score: " + score;
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem('usedWords', JSON.stringify([...usedWords]));
+            localStorage.setItem('score', score);
+            alert("Progress saved!");
+        }
+
+        function clearProgress() {
+            localStorage.removeItem('usedWords');
+            localStorage.removeItem('score');
+        }
+
+        const backgroundMusic = document.getElementById("backgroundMusic");
+        const dragSound = document.getElementById("dragSound");
+        const correctSound = document.getElementById("correctSound");
+        const wrongSound = document.getElementById("wrongSound");
+
+        function validWords(inputWord) {
+            if (usedWords.has(inputWord.toUpperCase())) {
+                alert("You have already used this word. Please choose a different word.");
+                resetInput();
+                wrongSound.play();
+                return false;
+            }
+
+            if (validWordsList.includes(inputWord.toUpperCase())) {
+                usedWords.add(inputWord.toUpperCase());
+                correctSound.play();
+                return true;
+            } else {
+                alert("The word is not valid. Please try again.");
+                resetInput();
+                wrongSound.play();
+                return false;
+            }
+        }
+
+        function restartGame() {
+            usedWords.clear();
+            score = 0;
+            document.getElementById("scoreDisplay").innerText = "Score: " + score;
+            document.getElementById("wordInput").value = "";
+            clearProgress();
+            alert("Game restarted! You can use all words again.");
+        }
+
+        function resetInput() {
+            document.getElementById("wordInput").value = "";
+        }
+
+        document.getElementById("submit").addEventListener("click", function() {
+            const inputWord = document.getElementById("wordInput").value;
+
+            if (inputWord === "") {
+                alert("Please enter a word!");
+                return;
+            }
+
+            if (validWords(inputWord)) {
+                score += inputWord.length;
+                document.getElementById("scoreDisplay").innerText = "Score: " + score;
+                resetInput();
+            }
+        });
+
+        document.getElementById("restart").addEventListener("click", function() {
+            restartGame();
+        });
+
+        document.getElementById("saveProgress").addEventListener("click", function() {
+            saveProgress();
+        });
+
+        const alphabetContainer = document.getElementById("alphabetContainer");
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        for (let letter of alphabet) {
+            const letterDiv = document.createElement("div");
+            letterDiv.classList.add("letter");
+            letterDiv.innerText = letter;
+
+            letterDiv.addEventListener("click", function () {
+                document.getElementById("wordInput").value += letter;
+                dragSound.play();
+            });
+
+            alphabetContainer.appendChild(letterDiv);
+        }
+
+        document.getElementById("startGameButton").addEventListener("click", async function () {
+            await loadDictionary();
+            loadProgress();
+            document.getElementById("startContainer").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            backgroundMusic.play();
+        });
+
+        // Toggle background music
+        document.getElementById("toggleMusic").addEventListener("click", function() {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                this.innerText = "Play Music";
+            } else {
+                backgroundMusic.play();
+                this.innerText = "Pause Music";
+            }
+            isMusicPlaying = !isMusicPlaying; // Toggle state
+        });
+
+        // Confirm exit and show dialog
+        window.onbeforeunload = function (event) {
+            event.preventDefault();
+            document.getElementById("exitDialog").style.display = "flex"; // Show the exit dialog
+            return ''; // This prompts a confirmation dialog in most browsers
+        };
+
+        // Handle the stay button
+        document.getElementById("stayButton").addEventListener("click", function () {
+            document.getElementById("exitDialog").style.display = "none"; // Hide the exit dialog
+        });
+
+        // Handle the exit button
+        document.getElementById("exitButton").addEventListener("click", function () {
+            backgroundMusic.pause(); // Stop the background music
+            clearProgress(); // Clear saved progress
+            window.close(); // Attempt to close the window
+        });
+
+        // Pause background music when the tab is not visible
+        document.addEventListener("visibilitychange", function () {
+            if (document.hidden) {
+                backgroundMusic.pause();
+            } else if (isMusicPlaying) {
+                backgroundMusic.play();
+            }
+        });
+
+	// Check localStorage for music status on page load
+	if (localStorage.getItem('backgroundMusic') === 'playing') {
+    		backgroundMusic.play();
+	}
+
+	// When the app is exited, save the background music status
+	document.getElementById("exitButton").addEventListener("click", function () {
+    		backgroundMusic.pause();
+    		localStorage.setItem('backgroundMusic', 'paused'); // Save paused status
+   		 window.close(); // Attempt to close the window
+	});
+
+	// When the user stays, update the localStorage
+	document.getElementById("stayButton").addEventListener("click", function () {
+   		 localStorage.setItem('backgroundMusic', 'playing'); // Update status to playing
+	});
+
+    </script>
+</body>
+</html>
