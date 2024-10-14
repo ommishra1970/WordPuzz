@@ -17,11 +17,11 @@
 
         #gameContainer {
             background-color: #fff;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
             text-align: center;
-            max-width: 400px;
+            width: 400px;
             display: none; /* Hidden initially */
         }
 
@@ -40,14 +40,28 @@
         .letter {
             background-color: #f67280;
             color: #fff;
-            width: 35px;
-            height: 35px;
+            width: 30px;
+            height: 30px;
             display: flex;
             justify-content: center;
             align-items: center;
             margin: 2px;
             border-radius: 5px;
-            font-size: 20px; /* Slightly larger font */
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .backspace {
+            background-color: #f67280;
+            color: #fff;
+            width: 70px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2px;
+            border-radius: 5px;
+            font-size: 10px;
             cursor: pointer;
         }
 
@@ -165,6 +179,7 @@
                 <div class="letter">B</div>
                 <div class="letter">N</div>
                 <div class="letter">M</div>
+                <div class="backspace">Backspace</div> <!-- Backspace button -->
             </div>
         </div>
 
@@ -263,27 +278,45 @@
         function restartGame() {
             usedWords.clear();
             score = 0;
-            document.getElementById("scoreDisplay").innerText = "Score: " + score;
-            document.getElementById("wordInput").value = "";
+            resetInput();
+            updateScoreDisplay();
             clearProgress();
-            alert("Game restarted! You can use all words again.");
+            alert("Game restarted!");
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById("scoreDisplay").innerText = "Score: " + score;
         }
 
         function resetInput() {
             document.getElementById("wordInput").value = "";
         }
 
-        document.getElementById("submit").addEventListener("click", function() {
-            const inputWord = document.getElementById("wordInput").value;
+        document.getElementById("startGameButton").addEventListener("click", () => {
+            loadDictionary().then(() => {
+                loadProgress();
+                document.getElementById("gameContainer").style.display = "block";
+                document.getElementById("startContainer").style.display = "none";
+                backgroundMusic.play();
+            });
+        });
 
-            if (inputWord === "") {
-                alert("Please enter a word!");
-                return;
+        document.getElementById("toggleMusic").addEventListener("click", () => {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                document.getElementById("toggleMusic").innerText = "Play Music";
+            } else {
+                backgroundMusic.play();
+                document.getElementById("toggleMusic").innerText = "Pause Music";
             }
+            isMusicPlaying = !isMusicPlaying;
+        });
 
-            if (validWords(inputWord)) {
-                score += inputWord.length;
-                document.getElementById("scoreDisplay").innerText = "Score: " + score;
+        document.getElementById("submit").addEventListener("click", () => {
+            const inputWord = document.getElementById("wordInput").value.trim();
+            if (inputWord.length > 0 && validWords(inputWord)) {
+                score += inputWord.length; // Increase score based on the length of the word
+                updateScoreDisplay();
                 resetInput();
             }
         });
@@ -291,48 +324,36 @@
         document.getElementById("saveProgress").addEventListener("click", saveProgress);
         document.getElementById("restart").addEventListener("click", restartGame);
 
-        document.querySelectorAll(".letter").forEach(letter => {
-            letter.addEventListener("click", () => {
-                document.getElementById("wordInput").value += letter.innerText;
+        document.getElementById("exitButton").addEventListener("click", () => {
+            clearProgress();
+            window.close(); // Close the window
+        });
+
+        document.getElementById("stayButton").addEventListener("click", () => {
+            document.getElementById("exitDialog").style.display = "none"; // Close the dialog
+        });
+
+        document.querySelectorAll('.letter').forEach(letter => {
+            letter.addEventListener('click', () => {
+                const inputField = document.getElementById("wordInput");
+                inputField.value += letter.textContent;
                 dragSound.play();
             });
         });
 
-        document.getElementById("toggleMusic").addEventListener("click", function() {
-            if (isMusicPlaying) {
-                backgroundMusic.pause();
-                this.innerText = "Play Music";
-            } else {
-                backgroundMusic.play();
-                this.innerText = "Pause Music";
-            }
-            isMusicPlaying = !isMusicPlaying;
+        // Add event listener for backspace button
+        document.querySelector('.backspace').addEventListener('click', () => {
+            const inputField = document.getElementById("wordInput");
+            inputField.value = inputField.value.slice(0, -1); // Remove last letter
         });
 
-        document.addEventListener("visibilitychange", function() {
-            if (document.hidden) {
-                backgroundMusic.pause();
-            } else if (isMusicPlaying) {
-                backgroundMusic.play();
-            }
+        // Show exit dialog on window close
+        window.addEventListener('beforeunload', (event) => {
+            event.preventDefault();
+            event.returnValue = '';
         });
-
-        document.getElementById("startGameButton").addEventListener("click", function() {
-            document.getElementById("startContainer").style.display = "none";
-            document.getElementById("gameContainer").style.display = "block";
-            loadDictionary();
-            loadProgress();
-            backgroundMusic.play();
-        });
-
-        document.getElementById("exitButton").addEventListener("click", function() {
-            saveProgress();
-            window.location.href = "https://example.com";
-        });
-
-        document.getElementById("stayButton").addEventListener("click", function() {
-            document.getElementById("exitDialog").style.display = "none";
-        });
+        
+        loadDictionary(); // Load the dictionary when the page loads
     </script>
 </body>
 </html>
