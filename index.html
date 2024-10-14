@@ -17,32 +17,38 @@
 
         #gameContainer {
             background-color: #fff;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             text-align: center;
-            width: 400px;
+            width: 90%; /* Adjusted for mobile screens */
+            max-width: 400px;
             display: none; /* Hidden initially */
         }
 
-        #alphabetContainer {
+        #keyboardContainer {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
+            flex-direction: column;
+            align-items: center;
             margin-bottom: 15px;
+        }
+
+        .keyboardRow {
+            display: flex;
+            justify-content: center;
         }
 
         .letter {
             background-color: #f67280;
             color: #fff;
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 5px;
+            margin: 2px;
             border-radius: 5px;
-            font-size: 20px;
+            font-size: 22px; /* Slightly larger font */
             cursor: pointer;
         }
 
@@ -127,7 +133,41 @@
     <div id="gameContainer">
         <h1>Word Puzzle</h1>
 
-        <div id="alphabetContainer"></div>
+        <div id="keyboardContainer">
+            <!-- QWERTY Layout -->
+            <div class="keyboardRow">
+                <div class="letter">Q</div>
+                <div class="letter">W</div>
+                <div class="letter">E</div>
+                <div class="letter">R</div>
+                <div class="letter">T</div>
+                <div class="letter">Y</div>
+                <div class="letter">U</div>
+                <div class="letter">I</div>
+                <div class="letter">O</div>
+                <div class="letter">P</div>
+            </div>
+            <div class="keyboardRow">
+                <div class="letter">A</div>
+                <div class="letter">S</div>
+                <div class="letter">D</div>
+                <div class="letter">F</div>
+                <div class="letter">G</div>
+                <div class="letter">H</div>
+                <div class="letter">J</div>
+                <div class="letter">K</div>
+                <div class="letter">L</div>
+            </div>
+            <div class="keyboardRow">
+                <div class="letter">Z</div>
+                <div class="letter">X</div>
+                <div class="letter">C</div>
+                <div class="letter">V</div>
+                <div class="letter">B</div>
+                <div class="letter">N</div>
+                <div class="letter">M</div>
+            </div>
+        </div>
 
         <input type="text" id="wordInput" placeholder="Drop letters here" readonly>
 
@@ -156,7 +196,7 @@
         let validWordsList = [];
         let usedWords = new Set();
         let score = 0;
-        let isMusicPlaying = true; // Track the music state
+        let isMusicPlaying = true;
 
         async function loadDictionary() {
             try {
@@ -249,39 +289,16 @@
             }
         });
 
-        document.getElementById("restart").addEventListener("click", function() {
-            restartGame();
-        });
+        document.getElementById("saveProgress").addEventListener("click", saveProgress);
+        document.getElementById("restart").addEventListener("click", restartGame);
 
-        document.getElementById("saveProgress").addEventListener("click", function() {
-            saveProgress();
-        });
-
-        const alphabetContainer = document.getElementById("alphabetContainer");
-        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-        for (let letter of alphabet) {
-            const letterDiv = document.createElement("div");
-            letterDiv.classList.add("letter");
-            letterDiv.innerText = letter;
-
-            letterDiv.addEventListener("click", function () {
-                document.getElementById("wordInput").value += letter;
+        document.querySelectorAll(".letter").forEach(letter => {
+            letter.addEventListener("click", () => {
+                document.getElementById("wordInput").value += letter.innerText;
                 dragSound.play();
             });
-
-            alphabetContainer.appendChild(letterDiv);
-        }
-
-        document.getElementById("startGameButton").addEventListener("click", async function () {
-            await loadDictionary();
-            loadProgress();
-            document.getElementById("startContainer").style.display = "none";
-            document.getElementById("gameContainer").style.display = "block";
-            backgroundMusic.play();
         });
 
-        // Toggle background music
         document.getElementById("toggleMusic").addEventListener("click", function() {
             if (isMusicPlaying) {
                 backgroundMusic.pause();
@@ -290,30 +307,10 @@
                 backgroundMusic.play();
                 this.innerText = "Pause Music";
             }
-            isMusicPlaying = !isMusicPlaying; // Toggle state
+            isMusicPlaying = !isMusicPlaying;
         });
 
-        // Confirm exit and show dialog
-        window.onbeforeunload = function (event) {
-            event.preventDefault();
-            document.getElementById("exitDialog").style.display = "flex"; // Show the exit dialog
-            return ''; // This prompts a confirmation dialog in most browsers
-        };
-
-        // Handle the stay button
-        document.getElementById("stayButton").addEventListener("click", function () {
-            document.getElementById("exitDialog").style.display = "none"; // Hide the exit dialog
-        });
-
-        // Handle the exit button
-        document.getElementById("exitButton").addEventListener("click", function () {
-            backgroundMusic.pause(); // Stop the background music
-            clearProgress(); // Clear saved progress
-            window.close(); // Attempt to close the window
-        });
-
-        // Pause background music when the tab is not visible
-        document.addEventListener("visibilitychange", function () {
+        document.addEventListener("visibilitychange", function() {
             if (document.hidden) {
                 backgroundMusic.pause();
             } else if (isMusicPlaying) {
@@ -321,23 +318,22 @@
             }
         });
 
-	// Check localStorage for music status on page load
-	if (localStorage.getItem('backgroundMusic') === 'playing') {
-    		backgroundMusic.play();
-	}
+        document.getElementById("startGameButton").addEventListener("click", function() {
+            document.getElementById("startContainer").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            loadDictionary();
+            loadProgress();
+            backgroundMusic.play();
+        });
 
-	// When the app is exited, save the background music status
-	document.getElementById("exitButton").addEventListener("click", function () {
-    		backgroundMusic.pause();
-    		localStorage.setItem('backgroundMusic', 'paused'); // Save paused status
-   		 window.close(); // Attempt to close the window
-	});
+        document.getElementById("exitButton").addEventListener("click", function() {
+            saveProgress();
+            window.location.href = "https://example.com";
+        });
 
-	// When the user stays, update the localStorage
-	document.getElementById("stayButton").addEventListener("click", function () {
-   		 localStorage.setItem('backgroundMusic', 'playing'); // Update status to playing
-	});
-
+        document.getElementById("stayButton").addEventListener("click", function() {
+            document.getElementById("exitDialog").style.display = "none";
+        });
     </script>
 </body>
 </html>
