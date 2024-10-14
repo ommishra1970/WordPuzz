@@ -50,8 +50,8 @@
             font-size: 20px;
             cursor: pointer;
         }
-
-        .backspace {
+	
+	.backspace {
             background-color: #f67280;
             color: #fff;
             width: 70px;
@@ -61,7 +61,7 @@
             align-items: center;
             margin: 2px;
             border-radius: 5px;
-            font-size: 10px;
+            font-size: 13px;
             cursor: pointer;
         }
 
@@ -179,7 +179,7 @@
                 <div class="letter">B</div>
                 <div class="letter">N</div>
                 <div class="letter">M</div>
-                <div class="backspace">Backspace</div> <!-- Backspace button -->
+		<div class="backspace">Backspace</div> <!-- Backspace button -->
             </div>
         </div>
 
@@ -278,45 +278,27 @@
         function restartGame() {
             usedWords.clear();
             score = 0;
-            resetInput();
-            updateScoreDisplay();
-            clearProgress();
-            alert("Game restarted!");
-        }
-
-        function updateScoreDisplay() {
             document.getElementById("scoreDisplay").innerText = "Score: " + score;
+            document.getElementById("wordInput").value = "";
+            clearProgress();
+            alert("Game restarted! You can use all words again.");
         }
 
         function resetInput() {
             document.getElementById("wordInput").value = "";
         }
 
-        document.getElementById("startGameButton").addEventListener("click", () => {
-            loadDictionary().then(() => {
-                loadProgress();
-                document.getElementById("gameContainer").style.display = "block";
-                document.getElementById("startContainer").style.display = "none";
-                backgroundMusic.play();
-            });
-        });
+        document.getElementById("submit").addEventListener("click", function() {
+            const inputWord = document.getElementById("wordInput").value;
 
-        document.getElementById("toggleMusic").addEventListener("click", () => {
-            if (isMusicPlaying) {
-                backgroundMusic.pause();
-                document.getElementById("toggleMusic").innerText = "Play Music";
-            } else {
-                backgroundMusic.play();
-                document.getElementById("toggleMusic").innerText = "Pause Music";
+            if (inputWord === "") {
+                alert("Please enter a word!");
+                return;
             }
-            isMusicPlaying = !isMusicPlaying;
-        });
 
-        document.getElementById("submit").addEventListener("click", () => {
-            const inputWord = document.getElementById("wordInput").value.trim();
-            if (inputWord.length > 0 && validWords(inputWord)) {
-                score += inputWord.length; // Increase score based on the length of the word
-                updateScoreDisplay();
+            if (validWords(inputWord)) {
+                score += inputWord.length;
+                document.getElementById("scoreDisplay").innerText = "Score: " + score;
                 resetInput();
             }
         });
@@ -324,36 +306,54 @@
         document.getElementById("saveProgress").addEventListener("click", saveProgress);
         document.getElementById("restart").addEventListener("click", restartGame);
 
-        document.getElementById("exitButton").addEventListener("click", () => {
-            clearProgress();
-            window.close(); // Close the window
-        });
-
-        document.getElementById("stayButton").addEventListener("click", () => {
-            document.getElementById("exitDialog").style.display = "none"; // Close the dialog
-        });
-
-        document.querySelectorAll('.letter').forEach(letter => {
-            letter.addEventListener('click', () => {
-                const inputField = document.getElementById("wordInput");
-                inputField.value += letter.textContent;
+        document.querySelectorAll(".letter").forEach(letter => {
+            letter.addEventListener("click", () => {
+                document.getElementById("wordInput").value += letter.innerText;
                 dragSound.play();
             });
         });
 
-        // Add event listener for backspace button
+        document.getElementById("toggleMusic").addEventListener("click", function() {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                this.innerText = "Play Music";
+            } else {
+                backgroundMusic.play();
+                this.innerText = "Pause Music";
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                backgroundMusic.pause();
+            } else if (isMusicPlaying) {
+                backgroundMusic.play();
+            }
+        });
+
+        document.getElementById("startGameButton").addEventListener("click", function() {
+            document.getElementById("startContainer").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            loadDictionary();
+            loadProgress();
+            backgroundMusic.play();
+        });
+	
+	// Add event listener for backspace button
         document.querySelector('.backspace').addEventListener('click', () => {
             const inputField = document.getElementById("wordInput");
             inputField.value = inputField.value.slice(0, -1); // Remove last letter
         });
 
-        // Show exit dialog on window close
-        window.addEventListener('beforeunload', (event) => {
-            event.preventDefault();
-            event.returnValue = '';
+        document.getElementById("exitButton").addEventListener("click", function() {
+            saveProgress();
+            window.location.href = "https://example.com";
         });
-        
-        loadDictionary(); // Load the dictionary when the page loads
+
+        document.getElementById("stayButton").addEventListener("click", function() {
+            document.getElementById("exitDialog").style.display = "none";
+        });
     </script>
 </body>
 </html>
